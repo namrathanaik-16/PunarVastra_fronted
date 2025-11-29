@@ -1404,37 +1404,47 @@
             try {
                 const materials = await fetchMaterials();
                 if (materials.length > 0) {
-                    marketplaceData = materials.map(m => ({
-                        id: m.id,
-                        image: m.image_url || m.image_path,
-                        color: m.ai_analysis.color.includes('Multi') ? 'multi' : 
-                               m.ai_analysis.color.toLowerCase().includes('blue') ? 'blue' :
-                               m.ai_analysis.color.toLowerCase().includes('red') || 
-                               m.ai_analysis.color.toLowerCase().includes('pink') ? 'red' : 'multi',
-                        texture: m.ai_analysis.texture.toLowerCase().includes('cotton') ? 'cotton' :
-                                m.ai_analysis.texture.toLowerCase().includes('denim') ? 'denim' : 'cotton',
-                        aiAnalysis: {
-                            color: m.ai_analysis.color,
-                            texture: m.ai_analysis.texture,
-                            pattern: m.ai_analysis.pattern,
-                            quality: m.ai_analysis.quality_rating || 'Good'
-                        },
-                        quantity: m.quantity,
-                        weight: `${m.quantity} kg`,
-                        price: m.price_per_kg,
-                        totalAmount: m.total_amount,
-                        factory: m.factory_name || m.factory_id,
-                        location: 'India',
-                        available: m.status === 'available'
-                    }));
+                    marketplaceData = materials.map(m => {
+                        const imageUrl = m.image_url ? `https://punarvastra-backend.onrender.com${m.image_url}` : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%23999%22%3ENo Image%3C/text%3E%3C/svg%3E';
+                        
+                        return {
+                            id: m.id,
+                            image: imageUrl,
+                            color: m.ai_analysis.color.toLowerCase().includes('multi') ? 'multi' : 
+                                   m.ai_analysis.color.toLowerCase().includes('blue') ? 'blue' :
+                                   m.ai_analysis.color.toLowerCase().includes('red') || 
+                                   m.ai_analysis.color.toLowerCase().includes('pink') ? 'red' :
+                                   m.ai_analysis.color.toLowerCase().includes('green') ? 'green' :
+                                   m.ai_analysis.color.toLowerCase().includes('yellow') ||
+                                   m.ai_analysis.color.toLowerCase().includes('orange') ? 'yellow' : 'multi',
+                            texture: m.ai_analysis.texture.toLowerCase().includes('cotton') ? 'cotton' :
+                                    m.ai_analysis.texture.toLowerCase().includes('silk') ? 'silk' :
+                                    m.ai_analysis.texture.toLowerCase().includes('denim') ? 'denim' :
+                                    m.ai_analysis.texture.toLowerCase().includes('polyester') ? 'polyester' : 'cotton',
+                            aiAnalysis: {
+                                color: m.ai_analysis.color,
+                                texture: m.ai_analysis.texture,
+                                pattern: m.ai_analysis.pattern,
+                                quality: m.ai_analysis.quality_rating || 'Good'
+                            },
+                            quantity: m.quantity,
+                            quantityCategory: m.quantity <= 2 ? 'small' : m.quantity <= 5 ? 'medium' : 'large',
+                            weight: `${m.quantity} kg`,
+                            price: m.price_per_kg,
+                            totalAmount: m.total_amount,
+                            factory: m.factory_name || m.factory_id,
+                            location: 'India',
+                            available: m.status === 'available'
+                        };
+                    });
                 }
             } catch (error) {
                 console.error('Failed to load materials:', error);
             }
             
             container.innerHTML = marketplaceData.map(item => `
-                <div class="product-card" data-color="${item.color}" data-texture="${item.texture}">
-                    <img src="${item.image}" alt="Textile Material" class="product-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%23999%22%3ETextile Material%3C/text%3E%3C/svg%3E'">
+                <div class="product-card" data-color="${item.color}" data-texture="${item.texture}" data-quantity="${item.quantityCategory}">
+                    <img src="${item.image}" alt="Textile Material" class="product-image" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%23999%22%3ETextile Material%3C/text%3E%3C/svg%3E'">
                     <span class="ai-badge">🤖 AI Verified</span>
                     <div class="product-info">
                         <span class="availability">✓ Available</span>
@@ -1472,7 +1482,7 @@
                             <div style="color: #888; font-size: 11px; margin-bottom: 3px;">TOTAL AMOUNT</div>
                             <div style="color: #d4af37; font-size: 20px; font-weight: 700;">₹${item.totalAmount.toFixed(2)}</div>
                         </div>
-                        <button class="buy-btn" onclick="openPurchaseModal(${item.id})">
+                        <button class="buy-btn" onclick="openPurchaseModal('${item.id}')">
                             🛒 Purchase Material
                         </button>
                     </div>
@@ -1485,15 +1495,18 @@
             const cards = document.querySelectorAll('.product-card');
             const colorFilter = document.querySelector('.marketplace-filters select:nth-of-type(1)').value;
             const textureFilter = document.querySelector('.marketplace-filters select:nth-of-type(2)').value;
+            const quantityFilter = document.querySelector('.marketplace-filters select:nth-of-type(3)').value;
 
             cards.forEach(card => {
                 const cardColor = card.dataset.color;
                 const cardTexture = card.dataset.texture;
+                const cardQuantity = card.dataset.quantity;
                 
                 const colorMatch = colorFilter === 'all' || cardColor === colorFilter;
                 const textureMatch = textureFilter === 'all' || cardTexture === textureFilter;
+                const quantityMatch = quantityFilter === 'all' || cardQuantity === quantityFilter;
                 
-                if (colorMatch && textureMatch) {
+                if (colorMatch && textureMatch && quantityMatch) {
                     card.style.display = 'block';
                 } else {
                     card.style.display = 'none';
@@ -1701,9 +1714,12 @@
                 return;
             }
             
-            container.innerHTML = materials.map(material => `
+            container.innerHTML = materials.map(material => {
+                const imageUrl = material.image_url ? `https://punarvastra-backend.onrender.com${material.image_url}` : 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%23999%22%3ENo Image%3C/text%3E%3C/svg%3E';
+                
+                return `
                 <div class="upload-card">
-                    <div class="upload-image" style="background-image: url('${material.image_url || 'placeholder.jpg'}')"></div>
+                    <div class="upload-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;"></div>
                     <div class="upload-info">
                         <div class="upload-id">ID: ${material.id}</div>
                         <div class="upload-detail">
@@ -1728,49 +1744,92 @@
                         </div>
                         <div class="upload-detail">
                             <span class="upload-label">Total Amount:</span>
-                            <span class="upload-value" style="color: #d4af37; font-weight: 700;">₹${material.total_amount}</span>
+                            <span class="upload-value" style="color: #d4af37; font-weight: 700;">₹${material.total_amount.toFixed(2)}</span>
                         </div>
                         <div class="upload-status ${material.status}">${material.status}</div>
                         <div class="upload-date">${new Date(material.uploaded_at).toLocaleDateString()}</div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Open purchase modal
         function openPurchaseModal(productId) {
             const product = marketplaceData.find(p => p.id === productId);
+            if (!product) return;
+            
             const modal = document.getElementById('purchaseModal');
             const modalBody = document.getElementById('modalBody');
             
             modalBody.innerHTML = `
-                <div style="margin-bottom: 20px;">
-                    <img src="${product.image}" style="width: 100%; border-radius: 10px; margin-bottom: 15px;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%23999%22%3ETextile Material%3C/text%3E%3C/svg%3E'">
-                    <h4>${product.aiAnalysis.color}</h4>
-                    <p style="color: #666; margin: 10px 0;">Weight: ${product.weight} | Price: ₹${product.price}/kg</p>
+                <div style="margin-bottom: 25px;">
+                    <img src="${product.image}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; margin-bottom: 20px;" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23333%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%22200%22 y=%22150%22 text-anchor=%22middle%22 font-size=%2220%22 fill=%22%23999%22%3ETextile Material%3C/text%3E%3C/svg%3E'">
+                    
+                    <div style="background: rgba(212, 175, 55, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #d4af37; margin-bottom: 10px; font-size: 20px;">${product.aiAnalysis.color}</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; color: #ccc; font-size: 14px;">
+                            <div><strong>Texture:</strong> ${product.aiAnalysis.texture}</div>
+                            <div><strong>Pattern:</strong> ${product.aiAnalysis.pattern}</div>
+                            <div><strong>Available:</strong> ${product.weight}</div>
+                            <div><strong>Factory:</strong> ${product.factory}</div>
+                            <div style="grid-column: 1/-1;"><strong>Price:</strong> ₹${product.price}/kg</div>
+                        </div>
+                    </div>
                 </div>
-                <form onsubmit="submitPurchase(event, ${productId})">
+                
+                <form id="purchaseForm" onsubmit="submitPurchase(event, '${productId}')">
                     <div class="form-group">
-                        <label class="form-label">Your Name</label>
-                        <input type="text" class="form-input" required>
+                        <label class="form-label">Your Name *</label>
+                        <input type="text" id="artisan_name" class="form-input" placeholder="Enter your full name" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label class="form-label">Contact Number</label>
-                        <input type="tel" class="form-input" required>
+                        <label class="form-label">Contact Number *</label>
+                        <input type="tel" id="contact" class="form-input" placeholder="+91 XXXXX XXXXX" pattern="[0-9+\\s-]+" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label class="form-label">Quantity (kg)</label>
-                        <input type="number" class="form-input" min="0.5" step="0.5" value="1" required>
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" id="email" class="form-input" placeholder="your.email@example.com" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label class="form-label">Delivery Address</label>
-                        <textarea class="form-input" rows="3" required></textarea>
+                        <label class="form-label">Quantity Required (kg) *</label>
+                        <input type="number" id="quantity" class="form-input" min="0.5" max="${product.quantity}" step="0.5" value="1" onchange="updatePurchaseTotal(${product.price})" required>
+                        <small style="color: #888; font-size: 12px;">Maximum available: ${product.quantity} kg</small>
                     </div>
-                    <button type="submit" class="submit-btn">Confirm Purchase</button>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Delivery Address *</label>
+                        <textarea id="address" class="form-input" rows="3" placeholder="Enter complete delivery address with pincode" required></textarea>
+                    </div>
+                    
+                    <div style="background: rgba(212, 175, 55, 0.15); padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+                        <div style="color: #888; font-size: 12px; margin-bottom: 5px;">TOTAL AMOUNT</div>
+                        <div id="purchaseTotal" style="color: #d4af37; font-size: 28px; font-weight: 700;">₹${product.price.toFixed(2)}</div>
+                        <div style="color: #888; font-size: 11px; margin-top: 5px;">For 1 kg @ ₹${product.price}/kg</div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="submit-btn" style="flex: 1;">
+                            🛒 Confirm Purchase
+                        </button>
+                        <button type="button" onclick="closePurchaseModal()" style="flex: 1; background: transparent; border: 2px solid #666; color: #666; padding: 15px; border-radius: 4px; cursor: pointer; font-size: 14px; text-transform: uppercase;">
+                            Cancel
+                        </button>
+                    </div>
                 </form>
             `;
             
             modal.classList.add('active');
+        }
+        
+        // Update purchase total when quantity changes
+        function updatePurchaseTotal(pricePerKg) {
+            const quantity = parseFloat(document.getElementById('quantity').value) || 1;
+            const total = quantity * pricePerKg;
+            document.getElementById('purchaseTotal').innerHTML = `₹${total.toFixed(2)}`;
+            document.getElementById('purchaseTotal').nextElementSibling.innerHTML = `For ${quantity} kg @ ₹${pricePerKg}/kg`;
         }
 
         // Close modal
@@ -1782,27 +1841,75 @@
         async function submitPurchase(event, productId) {
             event.preventDefault();
             
-            const form = event.target;
+            const product = marketplaceData.find(p => p.id === productId);
+            
+            // Get form values
+            const artisanName = document.getElementById('artisan_name').value;
+            const contact = document.getElementById('contact').value;
+            const email = document.getElementById('email').value;
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const address = document.getElementById('address').value;
+            
+            // Validate quantity
+            if (quantity > product.quantity) {
+                alert(`❌ Quantity requested (${quantity} kg) exceeds available quantity (${product.quantity} kg)`);
+                return;
+            }
+            
+            // Calculate total
+            const totalAmount = quantity * product.price;
+            
             const orderData = {
                 material_id: productId,
-                artisan_name: form[0].value,
-                contact: form[1].value,
-                quantity: form[2].value,
-                address: form[3].value
+                artisan_name: artisanName,
+                contact: contact,
+                email: email,
+                quantity: quantity,
+                address: address,
+                unit_price: product.price,
+                total_amount: totalAmount
             };
+            
+            // Show loading
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '⏳ Processing...';
+            submitBtn.disabled = true;
             
             try {
                 const result = await createOrder(orderData);
                 
                 if (result.success) {
-                    alert(`✅ Order created successfully!\n\nOrder ID: ${result.order.id}\nTotal Amount: ₹${result.order.total_amount}\n\nThe factory will contact you within 24 hours.`);
+                    alert(`✅ Order Placed Successfully!
+                    
+Order Details:
+━━━━━━━━━━━━━━━━━━━
+Order ID: ${result.order.id}
+Material: ${product.aiAnalysis.color} ${product.aiAnalysis.texture}
+Quantity: ${quantity} kg
+Unit Price: ₹${product.price}/kg
+Total Amount: ₹${totalAmount.toFixed(2)}
+━━━━━━━━━━━━━━━━━━━
+
+Factory: ${product.factory}
+
+The factory will contact you within 24 hours at:
+📧 ${email}
+📱 ${contact}
+
+Thank you for your order!`);
+                    
                     closePurchaseModal();
                     loadMarketplace(); // Refresh marketplace
                 } else {
                     alert('❌ Order creation failed. Please try again.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                 }
             } catch (error) {
-                alert(`❌ Error: ${error.message}`);
+                alert(`❌ Error placing order: ${error.message}\n\nPlease check your connection and try again.`);
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
         }
 
