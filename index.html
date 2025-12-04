@@ -1179,41 +1179,47 @@
     </div>
 
     <script>
+        // WAKE UP RENDER BACKEND ON PAGE LOAD
+(function() {
+    const backendURL = 'https://punarvastra-backend.onrender.com';
+    
+    // Create status notification
+    const statusDiv = document.createElement('div');
+    statusDiv.style.cssText = 'position:fixed;top:20px;right:20px;background:#d4af37;color:#000;padding:15px 25px;border-radius:8px;font-weight:bold;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+    statusDiv.textContent = '⏳ Starting backend...';
+    
+    // Add to page when loaded
+    window.addEventListener('DOMContentLoaded', function() {
+        document.body.appendChild(statusDiv);
+        
+        // Wake up backend
+        fetch(backendURL + '/')
+            .then(response => {
+                if (response.ok) {
+                    statusDiv.textContent = '✅ Backend ready!';
+                    statusDiv.style.background = '#4CAF50';
+                    setTimeout(() => statusDiv.remove(), 3000);
+                }
+            })
+            .catch(() => {
+                statusDiv.textContent = '⏳ Starting... (30s)';
+                // Keep trying
+                setTimeout(() => fetch(backendURL + '/'), 10000);
+            });
+        
+        // Keep-alive ping every 5 minutes
+        setInterval(() => {
+            fetch(backendURL + '/').catch(() => {});
+        }, 300000);
+    });
+})();
 
         // ============================================================================
         // API CONFIGURATION
         // ============================================================================
         
         const API_URL = 'https://punarvastra-backend.onrender.com' // Backend deployed on Render
-        const BASE_URL = 'https://punarvastra-backend.onrender.com';
-let backendAwake = false;
-
-async function wakeUpBackend() {
-    try {
-        const response = await fetch(BASE_URL + '/');
-        if (response.ok) {
-            backendAwake = true;
-            const status = document.getElementById('status');
-            if (status) status.innerHTML = '✅ Ready!';
-        }
-    } catch (e) {
-        setTimeout(wakeUpBackend, 5000);
-    }
-}
-
-function showStatus() {
-    const div = document.createElement('div');
-    div.id = 'status';
-    div.style.cssText = 'position:fixed;top:20px;right:20px;background:#d4af37;color:#000;padding:15px;border-radius:8px;z-index:10000;';
-    div.innerHTML = '⏳ Starting...';
-    document.body.appendChild(div);
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    showStatus();
-    wakeUpBackend();
-    setInterval(() => fetch(BASE_URL + '/').catch(() => {}), 300000);
-});
+      
         
         // ============================================================================
         // API HELPER FUNCTIONS
