@@ -1185,6 +1185,35 @@
         // ============================================================================
         
         const API_URL = 'https://punarvastra-backend.onrender.com' // Backend deployed on Render
+        const BASE_URL = 'https://punarvastra-backend.onrender.com';
+let backendAwake = false;
+
+async function wakeUpBackend() {
+    try {
+        const response = await fetch(BASE_URL + '/');
+        if (response.ok) {
+            backendAwake = true;
+            const status = document.getElementById('status');
+            if (status) status.innerHTML = '✅ Ready!';
+        }
+    } catch (e) {
+        setTimeout(wakeUpBackend, 5000);
+    }
+}
+
+function showStatus() {
+    const div = document.createElement('div');
+    div.id = 'status';
+    div.style.cssText = 'position:fixed;top:20px;right:20px;background:#d4af37;color:#000;padding:15px;border-radius:8px;z-index:10000;';
+    div.innerHTML = '⏳ Starting...';
+    document.body.appendChild(div);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    showStatus();
+    wakeUpBackend();
+    setInterval(() => fetch(BASE_URL + '/').catch(() => {}), 300000);
+});
         
         // ============================================================================
         // API HELPER FUNCTIONS
